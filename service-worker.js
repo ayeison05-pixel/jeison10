@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mototaxi-jeison-v1';
+const CACHE_NAME = 'mototaxi-jeison-v2';
 const urlsToCache = [
   '/jeison10/',
   '/jeison10/index.html',
