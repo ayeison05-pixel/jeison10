@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotoTaxi Jeison</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <style>
+        body {
+            font-family: system-ui, -apple-system, 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            background: #000000;
+            color: white;
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: bold;
+        }
+        #app-title {
+            font-size: clamp(1.4em, 4vw, 1.8em);
+            margin: 0;
+            line-height: 1.2;
+        }
+        #reloj {
+            font-size: clamp(1.1em, 3.5vw, 1.4em);
+            margin-top: 6px;
+            opacity: 0.95;
+            font-weight: bold;
+        }
+        #main-actions {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 0 10px 8px;
+            overflow-y: auto;
+        }
+        .saldo-display {
+            width: calc(100% - 20px);
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            font-weight: bold;
+            margin: 10px;
+        }
+        .resumen-display {
+            width: calc(100% - 20px);
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+            margin: 0 10px 10px;
+            font-size: 14px;
+            text-align: left;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .resumen-display h4 {
+            margin: 6px 0 4px;
+            font-size: 15px;
+            color: #1976d2;
+        }
+        .resumen-display p {
+            margin: 4px 0;
+            font-size: 14px;
+        }
+        .resumen-display ul {
+            padding-left: 16px;
+            margin: 6px 0;
+            font-size: 13px;
+        }
+        .resumen-display li {
+            margin-bottom: 3px;
+        }
+        .action-btn {
+            background: #FF9EBB;
+            color: black;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: transform 0.12s ease, background 0.12s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 6px;
+            aspect-ratio: 1 / 1;
+            width: 94%;
+            max-width: 100px;
+            min-height: 70px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        .action-btn:hover {
+            background: #ff7aa5;
+        }
+        .action-btn:active {
+            transform: scale(0.95);
+        }
+        #delete-container, #ahorro-container {
+            text-align: center;
+            padding: 6px 10px;
+        }
+        .delete-btn, .ahorro-btn {
+            border: none;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            padding: 10px 20px;
+            width: auto;
+            min-width: 180px;
+        }
+        .delete-btn {
+            background: #f44336 !important;
+            color: white !important;
+        }
+        .delete-btn:hover {
+            background: #d32f2f !important;
+        }
+        .ahorro-btn {
+            background: #2196f3 !important;
+            color: white !important;
+        }
+        .ahorro-btn:disabled {
+            background: #bdbdbd !important;
+            cursor: not-allowed;
+        }
+        /* Modal */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.2s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; } to { opacity: 1; }
+        }
+        #modal-content {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 340px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+            position: relative;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        /* Botón de cierre siempre visible */
+        #modal-close-btn {
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+            padding: 4px;
+            margin: -14px -14px 10px auto;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            cursor: pointer;
+            color: #333;
+        }
+        #modal-close-btn:hover {
+            background: #f0f0f0;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 7px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+        .modal-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 11px;
+            font-size: 15px;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: bold;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .modal-btn:hover {
+            background: #388e3c;
+        }
+        .modal-btn.cobro {
+            background: #2196f3 !important;
+            margin: 6px 0 !important;
+        }
+        .receipt-item {
+            padding: 7px 0;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+            font-size: 12px;
+        }
+        .receipt-ref {
+            font-weight: bold;
+            color: #1976d2;
+        }
+        .modal-title {
+            margin-top: 0;
+            color: #1976d2;
+            font-size: 1.2em;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div id="app-title">MotoTaxi Jeison</div>
+        <div id="reloj">Cargando...</div>
+    </header>
+    <div class="saldo-display" id="saldo-display">Cargando...</div>
+    <div class="resumen-display" id="resumen-display">Cargando resumen...</div>
+    <div id="main-actions">
+        <button class="action-btn" onclick="showModal('inicial')">Ingresar Dinero Inicial</button>
+        <button class="action-btn" onclick="showModal('carrera')">Nueva Carrera</button>
+        <button class="action-btn" onclick="showModal('gasto')">Registrar Gasto</button>
+        <button class="action-btn" onclick="showModal('deuda')">Gestionar Deudas</button>
+        <button class="action-btn" onclick="showModal('recibos')">Recibos de Venta</button>
+        <button class="action-btn" onclick="showModal('gastos-lista')">Ver Gastos</button>
+        <button class="action-btn" onclick="cerrarDia()">Cerrar Día</button>
+        <button class="action-btn" onclick="cerrarSemana()">Cerrar Semana</button>
+    </div>
+    <div id="ahorro-container">
+        <button class="ahorro-btn" id="btn-ahorro" onclick="registrarAhorro()" disabled>Registrar Ahorro</button>
+    </div>
+    <div id="delete-container">
+        <button class="delete-btn" onclick="borrarTodo()">Borrar Todos los Datos</button>
+    </div>
+    <div id="modal">
+        <div id="modal-content">
+            <span id="modal-close-btn" onclick="closeModal()">&times;</span>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+    <script>
+        // === RELOJ VENEZOLANO ===
+        function updateClock() {
+            const now = new Date();
+            const caracasDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Caracas"}));
+            const days = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+            const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+            const dayName = days[caracasDate.getDay()];
+            const dayOfMonth = caracasDate.getDate();
+            const monthName = months[caracasDate.getMonth()];
+            const timeString = caracasDate.toLocaleTimeString('es-VE', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            }).toLowerCase();
+            document.getElementById('reloj').textContent = 
+                `${dayName}, ${dayOfMonth} ${monthName} — ${timeString}`;
+        }
+        updateClock();
+        setInterval(updateClock, 60000);
+
+        // === APP PRINCIPAL ===
+        let db = null;
+        let appReady = false;
+        let saldo = 0;
+        let dineroInicial = 0;
+        let horaInicio = null;
+        let receiptCounters = {};
+        let diaCerrado = false;
+
+        const request = indexedDB.open('MotoTaxiDB', 4);
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains('carreras')) {
+                db.createObjectStore('carreras', { keyPath: 'id', autoIncrement: true });
+            }
+            if (!db.objectStoreNames.contains('gastos')) {
+                db.createObjectStore('gastos', { autoIncrement: true });
+            }
+            if (!db.objectStoreNames.contains('deudas')) {
+                db.createObjectStore('deudas', { keyPath: 'id', autoIncrement: true });
+            }
+            if (!db.objectStoreNames.contains('config')) {
+                const configStore = db.createObjectStore('config', { keyPath: 'id' });
+                configStore.put({
+                    id: 1,
+                    dineroInicial: 0,
+                    saldo: 0,
+                    horaInicio: null,
+                    receiptCounters: {},
+                    ultimoCierreSemana: null,
+                    ahorros: []
+                });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            loadData().then(() => {
+                updateSaldoUI();
+                updateResumen();
+                appReady = true;
+            }).catch(err => {
+                console.error('Error al cargar datos:', err);
+                document.getElementById('saldo-display').textContent = 'Error al cargar datos.';
+                document.getElementById('resumen-display').textContent = 'No se pudo cargar el resumen.';
+                appReady = true;
+            });
+        };
+
+        request.onerror = (event) => {
+            console.error('IndexedDB error:', event.target.error);
+            document.getElementById('saldo-display').textContent = 'Error: Base de datos no disponible.';
+            document.getElementById('reloj').textContent = 'Reloj no disponible';
+            appReady = true;
+        };
+
+        async function loadData() {
+            return new Promise((resolve) => {
+                const tx = db.transaction(['config']);
+                tx.objectStore('config').get(1).onsuccess = (event) => {
+                    const config = event.target.result;
+                    if (config) {
+                        dineroInicial = config.dineroInicial || 0;
+                        saldo = config.saldo || 0;
+                        horaInicio = config.horaInicio;
+                        receiptCounters = config.receiptCounters || {};
+                        diaCerrado = false;
+                        document.getElementById('btn-ahorro').disabled = true;
+                    }
+                    resolve();
+                };
+            });
+        }
+
+        function formatCOP(num) {
+            return Math.floor(num).toLocaleString('es-CO', { minimumFractionDigits: 0 });
+        }
+
+        function getTimestamp() {
+            return new Date().toLocaleString('es-VE', {
+                timeZone: 'America/Caracas',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function getDayAbbrev() {
+            const days = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+            const now = new Date();
+            const caracasTime = new Date(now.toLocaleString("en-US", {timeZone: "America/Caracas"}));
+            return days[caracasTime.getDay()];
+        }
+
+        function getDayKey() {
+            const now = new Date();
+            const caracasDate = new Date(now.toLocaleString("en-US", {timeZone: "America/Caracas"}));
+            const yearSuffix = caracasDate.getFullYear().toString().slice(-2);
+            const dayOfMonth = caracasDate.getDate();
+            return `${yearSuffix}-${dayOfMonth}`;
+        }
+
+        function generateRef() {
+            const dayKey = getDayKey();
+            if (!receiptCounters[dayKey]) receiptCounters[dayKey] = 0;
+            receiptCounters[dayKey]++;
+            const numStr = String(receiptCounters[dayKey]).padStart(3, '0');
+            return `ref:${dayKey}-${numStr}`;
+        }
+
+        function saveConfig() {
+            const tx = db.transaction(['config'], 'readwrite');
+            const store = tx.objectStore('config');
+            store.get(1).onsuccess = (event) => {
+                const config = event.target.result || { id: 1 };
+                store.put({ 
+                    ...config,
+                    dineroInicial, 
+                    saldo, 
+                    horaInicio,
+                    receiptCounters 
+                });
+            };
+        }
+
+        function updateSaldoUI() {
+            document.getElementById('saldo-display').innerHTML = 
+                `Saldo Diario: ${formatCOP(saldo)} COP<br>Dinero Inicial: ${formatCOP(dineroInicial)} COP`;
+        }
+
+        async function updateResumen() {
+            const txC = db.transaction(['carreras']);
+            const carreras = [];
+            const reqC = txC.objectStore('carreras').getAll();
+            const promC = new Promise(res => reqC.onsuccess = () => res(reqC.result));
+            
+            const txG = db.transaction(['gastos']);
+            const reqG = txG.objectStore('gastos').getAll();
+            const promG = new Promise(res => reqG.onsuccess = () => res(reqG.result));
+            
+            const txD = db.transaction(['deudas']);
+            const reqD = txD.objectStore('deudas').getAll();
+            const promD = new Promise(res => reqD.onsuccess = () => res(reqD.result));
+            
+            const [carrerasList, gastosList, deudasList] = await Promise.all([promC, promG, promD]);
+            
+            const ingresosRecibidos = carrerasList
+                .filter(c => c.pago !== 'fiado')
+                .reduce((sum, c) => sum + c.tarifa, 0);
+            const totalGastos = gastosList.reduce((sum, g) => sum + g.monto, 0);
+            const hayDeudas = deudasList.length > 0;
+            
+            // Últimos registros
+            const ultimos = [];
+            carrerasList.slice(-3).forEach(c => {
+                ultimos.push(`Carrera: ${formatCOP(c.tarifa)} COP (${c.pago})${c.nota ? ` - ${c.nota}` : ''}`);
+            });
+            gastosList.slice(-3).forEach(g => {
+                ultimos.push(`Gasto: ${formatCOP(g.monto)} COP${g.nota ? ` - ${g.nota}` : ''}`);
+            });
+            ultimos.reverse();
+            
+            let html = `<h4>Resumen en Vivo</h4>`;
+            html += `<p><strong>Dinero inicial:</strong> ${formatCOP(dineroInicial)} COP</p>`;
+            html += `<p><strong>Ingresos recibidos:</strong> ${formatCOP(ingresosRecibidos)} COP</p>`;
+            html += `<p><strong>Gastos:</strong> ${formatCOP(totalGastos)} COP</p>`;
+            html += `<p><strong>Saldo en caja:</strong> ${formatCOP(dineroInicial + ingresosRecibidos - totalGastos)} COP</p>`;
+            if (hayDeudas) {
+                html += `<p style="color:#d32f2f;"><strong>⚠️ Hay deudas pendientes</strong></p>`;
+            }
+            if (ultimos.length > 0) {
+                html += `<h4>Últimos registros</h4><ul>`;
+                ultimos.forEach(item => html += `<li>${item}</li>`);
+                html += `</ul>`;
+            }
+            document.getElementById('resumen-display').innerHTML = html;
+        }
+
+        // === MODALS ===
+        function showModal(type) {
+            if (!appReady) return;
+            const body = document.getElementById('modal-body');
+            body.innerHTML = '';
+            let html = '';
+            if (type === 'inicial') {
+                html = `
+                    <h3 class="modal-title">Dinero Inicial</h3>
+                    <input type="number" id="dinero-inicial-input" placeholder="Ej: 20000" inputmode="numeric">
+                    <button class="modal-btn" onclick="guardarDineroInicial()">Guardar</button>
+                `;
+            } else if (type === 'carrera') {
+                html = `
+                    <h3 class="modal-title">Nueva Carrera</h3>
+                    <select id="destino">
+                        <option value="urbano">Urbano (4.000 COP)</option>
+                        <option value="parada">Parada (5.000 COP)</option>
+                        <option value="rosario">Rosario (10.000 COP)</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                    <input type="number" id="tarifa-manual" style="display:none;" placeholder="Monto en COP" inputmode="numeric">
+                    <select id="pago">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="nequi">Nequi</option>
+                        <option value="fiado">Fiado</option>
+                    </select>
+                    <input type="text" id="nota" placeholder="Nota (opcional)">
+                    <button class="modal-btn" onclick="registrarCarrera()">Registrar Carrera</button>
+                `;
+                setTimeout(() => {
+                    const destinoSel = document.getElementById('destino');
+                    if (destinoSel) {
+                        destinoSel.onchange = () => {
+                            const manualInput = document.getElementById('tarifa-manual');
+                            if (manualInput) {
+                                manualInput.style.display = destinoSel.value === 'manual' ? 'block' : 'none';
+                            }
+                        };
+                    }
+                }, 0);
+            } else if (type === 'gasto') {
+                html = `
+                    <h3 class="modal-title">Registrar Gasto</h3>
+                    <input type="number" id="monto-gasto" placeholder="Monto en COP" inputmode="numeric">
+                    <input type="text" id="nota-gasto" placeholder="Descripción">
+                    <button class="modal-btn" onclick="registrarGasto()">Registrar Gasto</button>
+                `;
+            } else if (type === 'deuda') {
+                html = `<h3 class="modal-title">Deudas Pendientes</h3><div id="deudas-list">Cargando...</div>`;
+                setTimeout(loadDeudas, 100);
+            } else if (type === 'recibos') {
+                html = `<h3 class="modal-title">Recibos de Venta</h3><div id="recibos-list">Cargando...</div>`;
+                setTimeout(loadRecibos, 100);
+            } else if (type === 'gastos-lista') {
+                html = `<h3 class="modal-title">Gastos Registrados</h3><div id="gastos-completos-list">Cargando...</div>`;
+                setTimeout(loadGastosCompletos, 100);
+            } else if (type === 'reporte') {
+                html = `<h3 class="modal-title">Reporte Diario</h3><div id="reportes">Cargando...</div>`;
+                setTimeout(generateReporte, 100);
+            } else if (type === 'ahorros') {
+                html = `<h3 class="modal-title">Ahorros Registrados</h3><div id="ahorros-list">Cargando...</div>`;
+                setTimeout(loadAhorros, 100);
+            }
+            body.innerHTML = html;
+            document.getElementById('modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function guardarDineroInicial() {
+            const valor = parseFloat(document.getElementById('dinero-inicial-input')?.value);
+            if (isNaN(valor) || valor < 0) {
+                alert('Ingrese un monto válido.');
+                return;
+            }
+            dineroInicial = Math.floor(valor);
+            saldo = dineroInicial;
+            if (!horaInicio) {
+                horaInicio = getTimestamp(); // ✅ Corregido
+            }
+            saveConfig();
+            updateSaldoUI();
+            updateResumen();
+            closeModal();
+        }
+
+        function registrarCarrera() {
+            const destino = document.getElementById('destino')?.value;
+            let tarifa = 0;
+            if (destino === 'urbano') tarifa = 4000;
+            else if (destino === 'parada') tarifa = 5000;
+            else if (destino === 'rosario') tarifa = 10000;
+            else {
+                const manual = parseFloat(document.getElementById('tarifa-manual')?.value);
+                if (isNaN(manual) || manual <= 0) {
+                    alert('Ingrese un monto válido.');
+                    return;
+                }
+                tarifa = Math.floor(manual);
+            }
+            const pago = document.getElementById('pago')?.value;
+            const nota = document.getElementById('nota')?.value?.trim() || '';
+            const timestamp = getTimestamp();
+            const referencia = generateRef();
+            const carrera = { destino, tarifa, pago, nota, timestamp, referencia };
+            const tx = db.transaction(['carreras'], 'readwrite');
+            const request = tx.objectStore('carreras').add(carrera);
+            request.onsuccess = () => {
+                if (pago !== 'fiado') {
+                    saldo += tarifa;
+                } else {
+                    const deuda = { ...carrera };
+                    db.transaction(['deudas'], 'readwrite')
+                      .objectStore('deudas').add(deuda);
+                }
+                saveConfig();
+                updateSaldoUI();
+                updateResumen();
+                closeModal();
+            };
+        }
+
+        function registrarGasto() {
+            const monto = parseFloat(document.getElementById('monto-gasto')?.value);
+            if (isNaN(monto) || monto <= 0) {
+                alert('Ingrese un monto válido.');
+                return;
+            }
+            const nota = document.getElementById('nota-gasto')?.value?.trim() || '';
+            const timestamp = getTimestamp();
+            const gasto = { monto: Math.floor(monto), nota, timestamp };
+            const tx = db.transaction(['gastos'], 'readwrite');
+            tx.objectStore('gastos').add(gasto);
+            saldo -= gasto.monto;
+            saveConfig();
+            updateSaldoUI();
+            updateResumen();
+            closeModal();
+        }
+
+        function loadGastosCompletos() {
+            const list = document.getElementById('gastos-completos-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const tx = db.transaction(['gastos']);
+            const request = tx.objectStore('gastos').openCursor(null, 'prev');
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const g = cursor.value;
+                    const div = document.createElement('div');
+                    div.className = 'receipt-item';
+                    div.innerHTML = `
+                        ${g.timestamp}<br>
+                        Monto: ${formatCOP(g.monto)} COP<br>
+                        Descripción: ${g.nota || '—'}
+                    `;
+                    list.appendChild(div);
+                    cursor.continue();
+                } else if (list.innerHTML === '') {
+                    list.innerHTML = '<p>No hay gastos registrados.</p>';
+                }
+            };
+        }
+
+        function loadDeudas() {
+            const list = document.getElementById('deudas-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const tx = db.transaction(['deudas']);
+            const request = tx.objectStore('deudas').openCursor();
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const d = cursor.value;
+                    const div = document.createElement('div');
+                    div.className = 'receipt-item';
+                    div.innerHTML = `
+                        <div class="receipt-ref">${d.referencia}</div>
+                        ${d.timestamp} - ${d.destino}: ${formatCOP(d.tarifa)} COP<br>
+                        Nota: ${d.nota || '—'}
+                        <button class="modal-btn cobro" onclick="showCobroModal(${cursor.key})">Cobrar</button>
+                    `;
+                    list.appendChild(div);
+                    cursor.continue();
+                } else if (list.innerHTML === '') {
+                    list.innerHTML = '<p>No hay deudas pendientes.</p>';
+                }
+                updateResumen();
+            };
+        }
+
+        function showCobroModal(id) {
+            const body = document.getElementById('modal-body');
+            if (!body) return;
+            body.innerHTML = `
+                <h3 class="modal-title">¿Cómo pagó?</h3>
+                <button class="modal-btn" style="background:#4CAF50;" onclick="cobrarDeuda(${id}, 'efectivo')">Efectivo</button>
+                <button class="modal-btn" style="background:#2196F3;" onclick="cobrarDeuda(${id}, 'nequi')">Nequi</button>
+                <button class="modal-btn" style="background:#9E9E9E;" onclick="closeModal()">Cancelar</button>
+            `;
+        }
+
+        function cobrarDeuda(id, metodo) {
+            const tx = db.transaction(['deudas'], 'readwrite');
+            const store = tx.objectStore('deudas');
+            store.get(id).onsuccess = (event) => {
+                const deuda = event.target.result;
+                if (deuda) {
+                    saldo += deuda.tarifa;
+                    store.delete(id);
+                    saveConfig();
+                    updateSaldoUI();
+                    updateResumen();
+                    loadDeudas();
+                }
+            };
+        }
+
+        function loadRecibos() {
+            const list = document.getElementById('recibos-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const tx = db.transaction(['carreras']);
+            const request = tx.objectStore('carreras').openCursor(null, 'prev');
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const c = cursor.value;
+                    const div = document.createElement('div');
+                    div.className = 'receipt-item';
+                    div.innerHTML = `
+                        <div class="receipt-ref">${c.referencia}</div>
+                        ${c.timestamp}<br>
+                        ${c.destino}: ${formatCOP(c.tarifa)} COP<br>
+                        Pago: ${c.pago === 'fiado' ? 'Fiado' : (c.pago === 'efectivo' ? 'Efectivo' : 'Nequi')}<br>
+                        Nota: ${c.nota || '—'}
+                    `;
+                    list.appendChild(div);
+                    cursor.continue();
+                } else if (list.innerHTML === '') {
+                    list.innerHTML = '<p>No hay recibos aún.</p>';
+                }
+            };
+        }
+
+        function generateReporte() {
+            const report = document.getElementById('reportes');
+            if (!report) return;
+            report.innerHTML = 'Calculando...';
+            let ingresosRecibidos = 0, totalGastos = 0, totalDeudas = 0;
+            const txC = db.transaction(['carreras']);
+            txC.objectStore('carreras').openCursor().onsuccess = (e) => {
+                const c = e.target.result;
+                if (c) {
+                    if (c.value.pago !== 'fiado') ingresosRecibidos += c.value.tarifa;
+                    c.continue();
+                } else {
+                    const txG = db.transaction(['gastos']);
+                    txG.objectStore('gastos').openCursor().onsuccess = (e2) => {
+                        const g = e2.target.result;
+                        if (g) { totalGastos += g.value.monto; g.continue(); }
+                        else {
+                            const txD = db.transaction(['deudas']);
+                            txD.objectStore('deudas').openCursor().onsuccess = (e3) => {
+                                const d = e3.target.result;
+                                if (d) { totalDeudas += d.value.tarifa; d.continue(); }
+                                else {
+                                    report.innerHTML = `
+                                        <b>Ingresos Recibidos:</b> ${formatCOP(ingresosRecibidos)} COP<br>
+                                        <b>Gastos:</b> ${formatCOP(totalGastos)} COP<br>
+                                        <b>Deudas Pendientes:</b> ${formatCOP(totalDeudas)} COP<br>
+                                        <b>Saldo en Caja:</b> ${formatCOP(dineroInicial + ingresosRecibidos - totalGastos)} COP
+                                    `;
+                                }
+                            };
+                        }
+                    };
+                }
+            };
+        }
+
+        function generarReporteTexto(tipo = 'dia') {
+            const fecha = new Date().toLocaleDateString('es-VE', { timeZone: 'America/Caracas' });
+            const diaAbrev = getDayAbbrev();
+            const horaFin = getTimestamp();
+            let urbano = 0, parada = 0, rosario = 0, otros = 0;
+            let ingresosRecibidos = 0;
+            let totalGastos = 0;
+            const txC = db.transaction(['carreras']);
+            const carreras = [];
+            txC.objectStore('carreras').openCursor().onsuccess = (e) => {
+                const c = e.target.result;
+                if (c) {
+                    carreras.push(c.value);
+                    c.continue();
+                } else {
+                    carreras.forEach(c => {
+                        if (c.pago !== 'fiado') {
+                            ingresosRecibidos += c.tarifa;
+                            if (c.destino === 'urbano') urbano++;
+                            else if (c.destino === 'parada') parada++;
+                            else if (c.destino === 'rosario') rosario++;
+                            else otros++;
+                        }
+                    });
+                    const txG = db.transaction(['gastos']);
+                    txG.objectStore('gastos').openCursor().onsuccess = (e2) => {
+                        const g = e2.target.result;
+                        if (g) { totalGastos += g.value.monto; g.continue(); }
+                        else {
+                            const saldoCaja = dineroInicial + ingresosRecibidos - totalGastos;
+                            const titulo = tipo === 'semana' ? 'SEMANAL' : 'DIARIO';
+                            const reporte = 
+`REPORTE ${titulo} - ${diaAbrev.toUpperCase()}
+Fecha: ${fecha}
+Hora inicio: ${horaInicio}
+Hora cierre: ${horaFin}
+Carreras registradas (pagadas):
+- Urbano: ${urbano}
+- Parada: ${parada}
+- Rosario: ${rosario}
+- Otros: ${otros}
+Total carreras pagadas: ${urbano + parada + rosario + otros}
+Ingresos recibidos: ${formatCOP(ingresosRecibidos)} COP
+Gastos: ${formatCOP(totalGastos)} COP
+Dinero inicial: ${formatCOP(dineroInicial)} COP
+Saldo en caja: ${formatCOP(saldoCaja)} COP
+¡Buen trabajo!`;
+                            const blob = new Blob([reporte], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `reporte_${tipo}_${diaAbrev}_${fecha.replace(/\//g, '-')}.txt`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                            const mensaje = encodeURIComponent(reporte);
+                            const whatsappUrl = `https://wa.me/573025656771?text=${mensaje}`;
+                            window.open(whatsappUrl, '_blank');
+                            if (tipo === 'dia') {
+                                diaCerrado = true;
+                                document.getElementById('btn-ahorro').disabled = false;
+                            }
+                        }
+                    };
+                }
+            };
+        }
+
+        function cerrarDia() {
+            if (!appReady) return;
+            if (!horaInicio) {
+                alert('No se ha registrado el dinero inicial. No hay día que cerrar.');
+                return;
+            }
+            if (confirm('¿Cerrar el día?\nSe generará un reporte y se reiniciará el saldo.')) {
+                generarReporteTexto('dia');
+                saldo = 0;
+                dineroInicial = 0;
+                horaInicio = null;
+                saveConfig();
+                updateSaldoUI();
+                updateResumen();
+            }
+        }
+
+        function cerrarSemana() {
+            if (!appReady) return;
+            if (!confirm('¿Cerrar la semana?\nSe generará un resumen de los últimos 7 días.')) return;
+            generarReporteTexto('semana');
+        }
+
+        function registrarAhorro() {
+            if (!diaCerrado) {
+                alert('Primero debes cerrar el día.');
+                return;
+            }
+            const monto = prompt('¿Cuánto deseas registrar como ahorro hoy? (COP)');
+            if (monto === null) return;
+            const valor = parseFloat(monto);
+            if (isNaN(valor) || valor <= 0) {
+                alert('Monto inválido.');
+                return;
+            }
+            const fecha = new Date().toLocaleDateString('es-VE', { timeZone: 'America/Caracas' });
+            const ahorro = { fecha, monto: Math.floor(valor), timestamp: getTimestamp() };
+            const tx = db.transaction(['config'], 'readwrite');
+            tx.objectStore('config').get(1).onsuccess = (event) => {
+                const config = event.target.result || { id: 1, ahorros: [] };
+                const ahorros = config.ahorros || [];
+                ahorros.push(ahorro);
+                tx.objectStore('config').put({ ...config, ahorros });
+                alert('Ahorro registrado exitosamente.');
+                diaCerrado = false;
+                document.getElementById('btn-ahorro').disabled = true;
+            };
+        }
+
+        function loadAhorros() {
+            const list = document.getElementById('ahorros-list');
+            if (!list) return;
+            list.innerHTML = '';
+            const tx = db.transaction(['config']);
+            tx.objectStore('config').get(1).onsuccess = (event) => {
+                const config = event.target.result;
+                const ahorros = config?.ahorros || [];
+                if (ahorros.length === 0) {
+                    list.innerHTML = '<p>No hay ahorros registrados.</p>';
+                } else {
+                    ahorros.forEach(a => {
+                        const div = document.createElement('div');
+                        div.className = 'receipt-item';
+                        div.innerHTML = `${a.fecha}: ${formatCOP(a.monto)} COP<br><small>${a.timestamp}</small>`;
+                        list.appendChild(div);
+                    });
+                }
+            };
+        }
+
+        function borrarTodo() {
+            if (!appReady) return;
+            if (!confirm('⚠️ ¿Borrar TODOS los datos?\nEsta acción no se puede deshacer.')) return;
+            if (!confirm('⚠️ ÚLTIMA CONFIRMACIÓN:\n¿Está 100% seguro de borrar todo?')) return;
+            const req1 = db.transaction(['carreras'], 'readwrite').objectStore('carreras').clear();
+            const req2 = db.transaction(['gastos'], 'readwrite').objectStore('gastos').clear();
+            const req3 = db.transaction(['deudas'], 'readwrite').objectStore('deudas').clear();
+            const req4 = db.transaction(['config'], 'readwrite').objectStore('config').put({
+                id: 1, dineroInicial: 0, saldo: 0, horaInicio: null, receiptCounters: {}, ahorros: []
+            });
+            Promise.all([req1, req2, req3, req4]).then(() => {
+                saldo = 0;
+                dineroInicial = 0;
+                horaInicio = null;
+                receiptCounters = {};
+                diaCerrado = false;
+                document.getElementById('btn-ahorro').disabled = true;
+                updateSaldoUI();
+                updateResumen();
+                alert('Todos los datos han sido eliminados.');
+            }).catch(err => {
+                console.error(err);
+                alert('Error al borrar datos.');
+            });
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .catch(err => console.warn('SW no registrado:', err));
+        }
+    </script>
+</body>
+</html>
